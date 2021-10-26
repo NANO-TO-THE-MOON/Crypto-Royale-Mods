@@ -89,7 +89,7 @@
                     setTimeout(()=>{
                         let boxes = Object.values(user_state.cloud.loot);
                         let sum = 0;
-                        for(let b of boxes) sum+=(b[1]/b[2])/100;
+                        for(let b of boxes) sum+=(b[1]/b[2])/100 * (b[0].length > 0 && b[0] != "T" ? 2 : 1);
                         mods.packs["Boxes calculator"].boxPanelTitle.text(`Boxes value: ${parseFloat(sum).toFixed(3)} ROY`);
                     },50);
                 }
