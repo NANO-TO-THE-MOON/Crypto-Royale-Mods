@@ -126,7 +126,7 @@
             return `<div style="margin-top: 5px;"><label style="color: white;"><input type="checkbox">${name}</label></div>`;
         },
         getLeftPanel: function(innerRegExp){
-            return $("ul[data-v-ff11dc46]").find("li").filter(function () {return innerRegExp.test(this.innerHTML);});
+            return $("#left-col").find("li").filter(function () {return innerRegExp.test(this.innerHTML);});
         },
         init: function(){
             this.getLeftPanel(/Boxes provide health/).remove();
