@@ -118,6 +118,122 @@
                     window.open(vid.src);
                 }
 
+            },
+            "Royale Assembly":{
+                turnOn: function(){
+                    this.initialHeight = $("#left-col div.smooth-div").css("height");
+                    $("#left-col div.smooth-div").css("height", "");
+                    $("#left-col div.smooth-div > div > div > div").prepend("<div id='boxesCodeOutput' style='width: 100%; text-align: left;'>Output: Press the button first</div>");
+                    $("#left-col div.smooth-div > div > div > div").prepend("<button id='executeBoxesBtn' style='margin: 5px;' class='btn btn-light'>Execute boxes</button>");
+                    $("#executeBoxesBtn").on("click", this.executeCode);
+                    this.observer = new MutationObserver(function(mutations) {
+                        mutations.forEach(function(mutationRecord) {
+                            $("#left-col div.smooth-div").css("height", "");
+                        });    
+                    });
+                    let target = document.querySelector("#left-col div.smooth-div");
+                    this.observer.observe(target, { attributes : true, attributeFilter : ['style'] });
+                },
+                turnOff: function(){
+                    this.observer.disconnect();
+                    $("#left-col div.smooth-div").css("height", this.initialHeight);
+                    $("#executeBoxesBtn").off();
+                    $("#executeBoxesBtn").remove();
+                    $("#boxesCodeOutput").remove();
+                },
+                executeCode: function(){
+                    let codeOutput = "Output: ";
+                    let boxes = Object.values(user_state.cloud.loot);
+                    let code = "";
+                    let THIS = mods.packs["Royale Assembly"];
+                    if(boxes.length>0){
+                        for(let b of boxes){
+                            if(b[0].startsWith(".")){
+                                if(b[0]=="."){
+                                    code+="_";
+                                } else {
+                                    code+=b[0][1];
+                                }
+                            } else if(['P','R','S'].includes(b[0])){
+                                code+=['c','m','y'][['P','R','S'].indexOf(b[0])];
+                            } else {
+                                code+="?";
+                            }
+                        }
+                        code = code.match(/.{1,4}/g);
+                        for(let i=0; i<code.length; i++){
+                            if(code[i].startsWith("c")){
+                                if(i%2==0) i++;
+                            } else if(code[i].startsWith("m")) {
+                                THIS.labels[code[i][1]] = i;
+                            } else if(code[i].startsWith("STV")) {
+                                THIS.vars[code[i][3]] = THIS.calculateValue(code[i+1]);
+                                i++;
+                            } else if(code[i].startsWith("CLR")) {
+                                THIS.vars[code[i][3]] = 0;
+                            } else if(code[i].startsWith("INC")) {
+                                THIS.vars[code[i][3]]++;
+                            } else if(code[i].startsWith("ADD")) {
+                                THIS.vars[code[i][3]] = (THIS.vars[code[i][3]] + THIS.calculateValue(code[i+1]))%256;
+                                i++;
+                            } else if(code[i].startsWith("DEC")) {
+                                THIS.vars[code[i][3]]--;
+                                if(THIS.vars[code[i][3]]<0) THIS.vars[code[i][3]]+=256;
+                            } else if(code[i].startsWith("SUB")) {
+                                THIS.vars[code[i][3]] -= THIS.calculateValue(code[i+1]);
+                                if(THIS.vars[code[i][3]]<0) THIS.vars[code[i][3]]+=256;
+                                i++;
+                            } else if(code[i].startsWith("JMP")) {
+                                i = THIS.labels[code[i][3]];
+                            } else if(code[i].startsWith("CMP")) {
+                                let r = THIS.vars[code[i][3]] - THIS.calculateValue(code[i+1]);
+                                THIS.flags['-'] = r<0;
+                                THIS.flags['0'] = r==0;
+                                THIS.flags['+'] = r>0;
+                                i++;
+                            } else if(code[i].startsWith("BLE")) {
+                                if(THIS.flags['-'] || THIS.flags['0']) i = THIS.labels[code[i][3]];
+                            } else if(code[i].startsWith("BLT")) {
+                                if(THIS.flags['-']) i = THIS.labels[code[i][3]];
+                            } else if(code[i].startsWith("BEQ")) {
+                                if(THIS.flags['0']) i = THIS.labels[code[i][3]];
+                            } else if(code[i].startsWith("BNQ")) {
+                                if(!THIS.flags['0']) i = THIS.labels[code[i][3]];
+                            } else if(code[i].startsWith("BGT")) {
+                                if(THIS.flags['+']) i = THIS.labels[code[i][3]];
+                            } else if(code[i].startsWith("BGE")) {
+                                if(THIS.flags['+'] || THIS.flags['0']) i = THIS.labels[code[i][3]];
+                            } else if(code[i].startsWith("END")) {
+                                break;
+                            } else if(code[i].startsWith("LOG")) {
+                                let z = String.fromCharCode(THIS.vars[code[i][3]]);
+                                codeOutput+=THIS.vars[z];
+                            } else if(code[i].startsWith("PRT")) {
+                                let z = String.fromCharCode(THIS.vars[code[i][3]]);
+                                codeOutput+=String.fromCharCode(THIS.vars[z]);
+                            } else if(code[i]!="____"){
+                                codeOutput+=` [Unknown operation at block ${i} = ${code[i]}] `;
+                            }
+                        }
+                    } else {
+                        codeOutput+="No boxes found";
+                    }
+                    $("#boxesCodeOutput").text(codeOutput);
+                },
+                calculateValue: function(val){
+                    if(val.startsWith("RDV")){
+                        return this.vars[val[3]];
+                    } else if(/[_cmy]{4}/.test(val)){
+                        let n = "";
+                        for(let c of val) n+=['_','c','m','y'].indexOf(c);
+                        return parseInt(n, 4);
+                    } else {
+                        return 0;
+                    }
+                },
+                vars: {},
+                labels: {},
+                flags: {}
             }
         },
         settings: {},
