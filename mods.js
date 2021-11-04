@@ -146,6 +146,9 @@
                     let boxes = Object.values(user_state.cloud.loot);
                     let code = "";
                     let THIS = mods.packs["Royale Assembly"];
+                    THIS.vars = {};
+                    THIS.labels = {};
+                    THIS.flags = {};
                     if(boxes.length>0){
                         for(let b of boxes){
                             if(b[0].startsWith(".")){
@@ -166,6 +169,13 @@
                                 if(i%2==0) i++;
                             } else if(code[i].startsWith("m")) {
                                 THIS.labels[code[i][1]] = i;
+                            }
+                        }
+                        for(let i=0; i<code.length; i++){
+                            if(code[i].startsWith("c")){
+                                if(i%2==0) i++;
+                            } else if(code[i].startsWith("m")) {
+                                continue;
                             } else if(code[i].startsWith("STV")) {
                                 THIS.vars[code[i][3]] = THIS.calculateValue(code[i+1]);
                                 i++;
